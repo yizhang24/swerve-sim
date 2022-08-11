@@ -2,10 +2,11 @@ package com.team1678.frc2022.subsystems;
 
 import java.util.ArrayList;
 
+import com.ctre.phoenix.sensors.BasePigeonSimCollection;
 import com.team1678.frc2022.Constants;
 import com.team1678.frc2022.RobotState;
 import com.team1678.frc2022.drivers.Pigeon;
-import com.team1678.frc2022.drivers.SwerveModule;
+import com.team1678.frc2022.drivers.SimSwerveModule;
 import com.team1678.frc2022.logger.LogStorage;
 import com.team1678.frc2022.logger.LoggingSystem;
 import com.team1678.frc2022.loops.ILooper;
@@ -23,6 +24,7 @@ import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -45,9 +47,11 @@ public class Swerve extends Subsystem {
     public boolean mWantsAutoVisionAim = false;
 
     public SwerveDriveOdometry swerveOdometry;
-    public SwerveModule[] mSwerveMods;
+    public SimSwerveModule[] mSwerveMods;
 
     public Pigeon mPigeon = Pigeon.getInstance();
+
+    BasePigeonSimCollection mSimPigeon = mPigeon.getSimPigeon();
 
     // chassis velocity status
     ChassisSpeeds chassisVelocity = new ChassisSpeeds();
@@ -96,11 +100,11 @@ public class Swerve extends Subsystem {
 
         zeroGyro();
 
-        mSwerveMods = new SwerveModule[] {
-            new SwerveModule(0, Constants.SwerveConstants.Mod0.SwerveModuleConstants()),
-            new SwerveModule(1, Constants.SwerveConstants.Mod1.SwerveModuleConstants()),
-            new SwerveModule(2, Constants.SwerveConstants.Mod2.SwerveModuleConstants()),
-            new SwerveModule(3, Constants.SwerveConstants.Mod3.SwerveModuleConstants())
+        mSwerveMods = new SimSwerveModule[] {
+            new SimSwerveModule(0, Constants.SwerveConstants.Mod0.SwerveModuleConstants()),
+            new SimSwerveModule(1, Constants.SwerveConstants.Mod1.SwerveModuleConstants()),
+            new SimSwerveModule(2, Constants.SwerveConstants.Mod2.SwerveModuleConstants()),
+            new SimSwerveModule(3, Constants.SwerveConstants.Mod3.SwerveModuleConstants())
         };
     }
 
@@ -153,16 +157,16 @@ public class Swerve extends Subsystem {
                 maybeStopSnap(true);
             }
         }
-        SwerveModuleState[] swerveModuleStates = null;
+        SwerveModuleState[] SwerveModuleStates = null;
         if (mLocked) {
-            swerveModuleStates = new SwerveModuleState[]{
+            SwerveModuleStates = new SwerveModuleState[]{
                 new SwerveModuleState(0.1, Rotation2d.fromDegrees(45)),
                 new SwerveModuleState(0.1, Rotation2d.fromDegrees(315)),
                 new SwerveModuleState(0.1, Rotation2d.fromDegrees(135)),
                 new SwerveModuleState(0.1, Rotation2d.fromDegrees(225))
             };
         } else {
-            swerveModuleStates =
+            SwerveModuleStates =
                 Constants.SwerveConstants.swerveKinematics.toSwerveModuleStates(
                     fieldRelative ? ChassisSpeeds.fromFieldRelativeSpeeds(
                                         translation.getX(), 
@@ -176,10 +180,10 @@ public class Swerve extends Subsystem {
                                         rotation)
                                     );
         }
-        SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, Constants.SwerveConstants.maxSpeed);
+        SwerveDriveKinematics.desaturateWheelSpeeds(SwerveModuleStates, Constants.SwerveConstants.maxSpeed);
 
-        for (SwerveModule mod : mSwerveMods) {
-            mod.setDesiredState(swerveModuleStates[mod.moduleNumber], isOpenLoop);
+        for (SimSwerveModule mod : mSwerveMods) {
+            mod.setDesiredState(SwerveModuleStates[mod.moduleNumber], isOpenLoop);
         }
     }
 
@@ -231,7 +235,7 @@ public class Swerve extends Subsystem {
     public void setModuleStates(SwerveModuleState[] desiredStates) {
         SwerveDriveKinematics.desaturateWheelSpeeds(desiredStates, Constants.SwerveConstants.maxSpeed);
         
-        for(SwerveModule mod : mSwerveMods){
+        for(SimSwerveModule mod : mSwerveMods){
             mod.setDesiredState(desiredStates[mod.moduleNumber], false);
             SmartDashboard.putNumber("mod " + mod.moduleNumber +  " desired speed", desiredStates[mod.moduleNumber].speedMetersPerSecond);
             SmartDashboard.putNumber("mod " + mod.moduleNumber +  " desired angle", MathUtil.inputModulus(desiredStates[mod.moduleNumber].angle.getDegrees(), 0, 180));
@@ -251,14 +255,14 @@ public class Swerve extends Subsystem {
     }
 
     public void resetAnglesToAbsolute() {
-        for (SwerveModule mod : mSwerveMods) {
+        for (SimSwerveModule mod : mSwerveMods) {
             mod.resetToAbsolute();
         }
     }
 
     public SwerveModuleState[] getStates() {
         SwerveModuleState[] states = new SwerveModuleState[4];
-        for(SwerveModule mod : mSwerveMods){
+        for(SimSwerveModule mod : mSwerveMods){
             states[mod.moduleNumber] = mod.getState();
             SmartDashboard.putNumber("mod " + mod.moduleNumber + " current speed", states[mod.moduleNumber].speedMetersPerSecond);
             SmartDashboard.putNumber("mod " + mod.moduleNumber + " current angle", MathUtil.inputModulus(states[mod.moduleNumber].angle.getDegrees(), 0, 180));
@@ -267,8 +271,8 @@ public class Swerve extends Subsystem {
     }
 
     public void setAnglePIDValues(double kP, double kI, double kD) {
-        for (SwerveModule swerveModule : mSwerveMods) {
-            swerveModule.updateAnglePID(kP, kI, kD);
+        for (SimSwerveModule SimSwerveModule : mSwerveMods) {
+            SimSwerveModule.updateAnglePID(kP, kI, kD);
         }
     }
 
@@ -356,6 +360,12 @@ public class Swerve extends Subsystem {
 
     }
 
+    public void updateSim() {
+        double chassisRotationSpeed = chassisVelocity.omegaRadiansPerSecond;
+
+        mSimPigeon.addHeading(chassisRotationSpeed);
+    }
+
     //logger
     @Override
     public void registerLogger(LoggingSystem LS) {
@@ -378,7 +388,7 @@ public class Swerve extends Subsystem {
         headers.add("snap_target");
         headers.add("vision_align_target_angle");
         headers.add("swerve_heading");
-        for (SwerveModule module : this.mSwerveMods) {
+        for (SimSwerveModule module : this.mSwerveMods) {
             headers.add(module.moduleNumber + "_angle");
             headers.add(module.moduleNumber + "_desired_angle");
             headers.add(module.moduleNumber + "_velocity");
@@ -401,7 +411,7 @@ public class Swerve extends Subsystem {
         items.add(mPeriodicIO.snap_target);
         items.add(mPeriodicIO.vision_align_target_angle);
         items.add(mPeriodicIO.swerve_heading);
-        for (SwerveModule module : this.mSwerveMods) {
+        for (SimSwerveModule module : this.mSwerveMods) {
             items.add(module.getState().angle.getDegrees());
             items.add(module.getTargetAngle());
             items.add(module.getState().speedMetersPerSecond);

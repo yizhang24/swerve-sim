@@ -1,5 +1,6 @@
 package com.team1678.frc2022.drivers;
 
+import com.ctre.phoenix.sensors.BasePigeonSimCollection;
 import com.ctre.phoenix.sensors.Pigeon2;
 import com.team1678.frc2022.Constants;
 import com.team1678.frc2022.Ports;
@@ -70,4 +71,8 @@ public class Pigeon {
     public Rotation2d getUnadjustedRoll() {
         return Rotation2d.fromDegrees(mGyro.getRoll());
     }
-}
+
+    public BasePigeonSimCollection getSimPigeon() {
+        return mGyro.getSimCollection();
+    }
+} 

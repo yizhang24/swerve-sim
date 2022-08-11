@@ -15,16 +15,17 @@ import com.team1678.frc2022.logger.LoggingSystem;
 import com.team1678.frc2022.loops.CrashTracker;
 import com.team1678.frc2022.loops.Looper;
 import com.team1678.frc2022.shuffleboard.ShuffleBoardInteractions;
+import com.team1678.frc2022.sim.PhysicsSim;
 import com.team1678.frc2022.subsystems.Limelight;
 import com.team1678.frc2022.subsystems.RobotStateEstimator;
 import com.team1678.frc2022.subsystems.Swerve;
 import com.team1678.lib.util.CTREConfigs;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 
 import edu.wpi.first.wpilibj.Timer;
-import com.team254.lib.wpilib.TimedRobot;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -35,7 +36,7 @@ import com.team254.lib.wpilib.TimedRobot;
  * build.gradle file in the
  * project.
  */
-public class Robot extends TimedRobot {
+public class Robot extends edu.wpi.first.wpilibj.TimedRobot {
 	/**
 	 * This function is run when the robot is first started up and should be used
 	 * for any
@@ -148,6 +149,8 @@ public class Robot extends TimedRobot {
 			if (mAutoModeExecutor != null) {
                 mAutoModeExecutor.stop();
             }
+
+			mSwerve.resetOdometry(new Pose2d(3, 3, new Rotation2d()));
 
 			mDisabledLooper.stop();
 			mEnabledLooper.start();
@@ -277,5 +280,11 @@ public class Robot extends TimedRobot {
 
 	@Override
 	public void testPeriodic() {
+	}
+
+	@Override
+	public void simulationPeriodic() {
+		PhysicsSim.getInstance().run();
+		mSwerve.updateSim();
 	}
 }
