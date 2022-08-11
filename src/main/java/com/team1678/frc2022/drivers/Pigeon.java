@@ -33,7 +33,7 @@ public class Pigeon {
     public Rotation2d getYaw() {
         Rotation2d angle = getUnadjustedYaw().rotateBy(yawAdjustmentAngle.inverse());
         if (inverted) {
-            return angle.inverse();
+            angle = angle.inverse();
         }
         return angle;
     }

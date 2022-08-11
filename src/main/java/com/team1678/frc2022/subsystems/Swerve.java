@@ -172,7 +172,7 @@ public class Swerve extends Subsystem {
                                         translation.getX(), 
                                         translation.getY(), 
                                         rotation, 
-                                        mPigeon.getYaw().getWPIRotation2d()
+                                        mPigeon.getYaw().getWPIRotation2d().rotateBy(Rotation2d.fromDegrees(-90))
                                     )
                                     : new ChassisSpeeds(
                                         translation.getX(), 

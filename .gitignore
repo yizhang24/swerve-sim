@@ -162,3 +162,5 @@ bin/
 *-window.json
 .idea/compiler.xml
 .idea/gradle.xml
+
+/Simulation Logs
