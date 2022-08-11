@@ -15,7 +15,7 @@ import java.text.SimpleDateFormat;
 public class LoggingSystem {
     private static LoggingSystem mInstance; 
     //  set original directory path. Will be added to in LoggingSystem() when new directories are created inside /home/lvuser/logs
-    public static String mRootDirectory = "./";
+    public static String mRootDirectory = "./Simulation Logs";
     public static String mDirectory = mRootDirectory;
     ArrayList<ILoggable> loggableItems = new ArrayList<ILoggable>();
 
