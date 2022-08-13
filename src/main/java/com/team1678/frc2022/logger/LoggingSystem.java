@@ -1,174 +1,292 @@
 package com.team1678.frc2022.logger;
 
-import com.team1678.frc2022.loops.Loop;
-import com.team1678.frc2022.loops.ILooper;
-
-import java.util.ArrayList;
-import java.util.TimeZone;
 import java.io.File;
-
-import java.io.FileWriter;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.TimeZone;
+import java.util.function.Supplier;
+
+import com.team1678.frc2022.Robot;
+
+import java.lang.Object;
+
+import static java.util.Map.entry;
 
 public class LoggingSystem {
-    private static LoggingSystem mInstance; 
-    //  set original directory path. Will be added to in LoggingSystem() when new directories are created inside /home/lvuser/logs
-    public static String mRootDirectory = "./Simulation Logs";
-    public static String mDirectory = mRootDirectory;
-    ArrayList<ILoggable> loggableItems = new ArrayList<ILoggable>();
 
-    ArrayList<FileWriter> loggableFiles = new ArrayList<FileWriter>();
+    // Constants
+    private static final int kQueueCapacity = 1000001;
+    public final String kRootDirectory;
+    
+    public final LogWriter mLogWriter;
 
-    //  Use Boolean to decide whether or not to start logging
-    Boolean log = true;
+    private boolean running = false;
+    private static ArrayList<ArrayList<Supplier<String>>> mElements = new ArrayList<ArrayList<Supplier<String>>>();
+    private static ArrayList<LogStorage> mStorage = new ArrayList<LogStorage>();
+    private static ArrayDeque<LogEntry> mQueue = new ArrayDeque<LogEntry>(kQueueCapacity);
+    private static File mLogDirectory = null;
 
-    /* 
-        Create a for loop that goes over all the current files and subdirectories in mDirectories.
-        If the directory is empty (when the max number is 0), start a new subdirectory at 1.
-        Whenever the logging system reboots, function will scan over all the existing files and subdirectories and find the largest one.
-        New subdirectory is created by adding one (1) to the max file number.
-    */
+    private static DateFormat dateFormat = new SimpleDateFormat(
+            "dd_MMM_yy 'at' hh.mm.ss aa");
 
-    private LoggingSystem() {
-        if (log == true) {
-        //  Creates a new directory every time the robot is turned on (regardless of enabling/disabling)
-        LogDirectory();
+
+    private Date startTime;
+    private static boolean inCompetition = false;
+    private static String eventName;
+    private static String matchType;
+    private static Integer matchNumber;
+
+    private final boolean isBenchmark;
+
+    public LoggingSystem(boolean benchmarking) {
+        mLogWriter = new LogWriter(mQueue);
+        dateFormat.setTimeZone(TimeZone.getTimeZone("PST"));
+        isBenchmark = benchmarking;
+        if (isBenchmark || Robot.isSimulation()) {
+            kRootDirectory = "./Output Logs";
+        } else {
+            kRootDirectory = "/home/lvuser/logs";
         }
     }
 
-    public  void LogDirectory() {
-        if (log == true) {
-            File Directory = new File(mDirectory);
-            Integer maxNum = 0;
-            if  (! Directory.isDirectory()) {
-                Directory.mkdir();
+    public synchronized int registerObject(Class<?> loggedClass, Object loggedObject) {
+
+        ArrayList<String> headers = new ArrayList<String>();
+
+        int subsystemIndex = mElements.size();
+        mElements.add(new ArrayList<Supplier<String>>());
+
+        for (Method method : loggedClass.getDeclaredMethods()) {
+            if (!method.isAnnotationPresent(Log.class) || !LoggalbeHandler.containsKey(method.getReturnType())
+                    || method.getParameterCount() > 0) {
+                continue;
             }
-            
-            for (final File directoryEntry : Directory.listFiles()) {
+            method.setAccessible(true);
+            LoggableProcessor processor = LoggalbeHandler.get(method.getReturnType());
+            processor.getLoggalbe(() -> {
                 try {
-                    if (directoryEntry.isDirectory()) {
-                        String directory_name = directoryEntry.getName();
-                        int char_index = directory_name.indexOf("_");
-                        int Num = Integer.parseInt(directory_name.substring(0, char_index));
-                        if (Num > maxNum) {
-                            maxNum = Num;
-                        }
-                    } 
+                    return method.invoke(loggedObject);
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }, subsystemIndex);
+            headers.add(method.getName());
+        }
+
+        for (Field field : loggedClass.getDeclaredFields()) {
+            if (!field.isAnnotationPresent(Log.class) || !LoggalbeHandler.containsKey(field.getType())) {
+                continue;
+            }
+            field.setAccessible(true);
+            LoggableProcessor processor = LoggalbeHandler.get(field.getType());
+            processor.getLoggalbe(() -> {
+                try {
+                    return field.get(loggedObject);
+                } catch (IllegalAccessException e) {
+                    return null;
+                }
+            }, subsystemIndex);
+            headers.add(field.getName());
+        }
+
+        String name;
+        if (isBenchmark) {
+            name = "ANNOTATION_LOGGER";
+        } else {
+            name = loggedClass.getSimpleName();
+        }
+        LogStorage store = new LogStorage(name, headers);
+        mStorage.add(store);
+        return subsystemIndex;
+    }
+
+
+    public void setDirectory() {
+
+        String path = kRootDirectory;
+
+        if (!isBenchmark || Robot.isReal()) {
+            // create logs folder if not present
+            File rootDirectory = new File(kRootDirectory);
+            if (!rootDirectory.isDirectory()) {
+                rootDirectory.mkdir();
+            }
+
+            Integer maxNum = 0;
+            for (final File entry : rootDirectory.listFiles()) {
+                try {
+                    if (!entry.isDirectory()) {
+                        continue;
+                    }
+                    String directory_name = entry.getName();
+                    int char_index = directory_name.indexOf(")");
+                    int num = Integer.parseInt(directory_name.substring(1, char_index));
+                    if (num > maxNum) {
+                        maxNum = num;
+                    }
                 } catch (Exception e) {
-                    //  Files that are not numbers are expected and ignored
+                    // Files that are not numbers are expected and ignored
                 }
             }
             maxNum++;
 
             // get system time in milliseconds and convert to datetime in PST time zone
-            long milliSec = System.currentTimeMillis();
-            Date res = new Date(milliSec);
-            DateFormat sdf = new SimpleDateFormat("yy-MM-dd-HH-mm-ss");
-            sdf.setTimeZone(TimeZone.getTimeZone("PST"));
+            startTime = new Date(System.currentTimeMillis());
 
             // format time in datetime and add to file name
-            mDirectory = mRootDirectory + "/" + maxNum.toString() + "_" + sdf.format(res);
+            path = kRootDirectory + "/(" + maxNum.toString() + ") " + dateFormat.format(startTime);
 
-            File newDirectory = new File(mDirectory);
-            newDirectory.mkdir();
+            // create new directory
+            mLogDirectory = new File(path);
+            mLogDirectory.mkdir();
+        }
+
+        // create new directory
+        mLogDirectory = new File(path);
+        mLogDirectory.mkdir();
+
+        // update filewriters
+        for (int i = 0; i < mStorage.size(); i++) {
+            mStorage.get(i).setPath(path);
+        }
+        
+    }
+
+    public void queueLogs() {
+        for (int i = 0; i < mElements.size(); i++) {
+            ArrayList<Supplier<String>> values = mElements.get(i);
+            String[] temp = new String[values.size()];
+            for (int j = 0; j < values.size(); j++) {
+                temp[j] = values.get(j).get();
+            }
+            mQueue.add(new LogEntry(i, temp));
         }
     }
 
-    public synchronized static LoggingSystem getInstance() {
+    public int queueSize() {
+        return mQueue.size();
+    }
+
+    public void start() {
+        if (!running) {
+            running = true;
+            setDirectory();
+            mLogWriter.updateStorage(mStorage);
+            System.out.println("Starting Logger");
+            if (mLogWriter.isAlive()) {
+                mLogWriter.interrupt();
+            }
+            mLogWriter.start();
+        }
+    }
+
+    public boolean isDone() {
+        return mQueue.isEmpty();
+    }
+
+    public void end() {
+        if (running) {
+            running = false;
+
+            mLogWriter.end();
+
+            if (inCompetition) {
+                try {
+                    String path = kRootDirectory + "/" + eventName + matchType + " Match "
+                            + matchNumber.toString() + "_" + dateFormat.format(startTime);
+                    mLogDirectory.renameTo(new File(path));  
+                } catch (NoSuchElementException e) {
+                    // No-op
+                }
+
+            }
+
+        }
+    }
+
+    public void reset() {
+        mLogWriter.close();
+        mQueue.clear();
+        mStorage.clear();
+        mElements.clear();
+        mLogWriter.updateStorage(mStorage);
+        mLogDirectory = null;
+    }
+
+    public void updateStorage() {
+        mLogWriter.updateStorage(mStorage);
+    }
+    
+    public void updateMatchInfo(String newEventName, String newMatchType, int newMatchNumber) {
+        if (inCompetition) {
+            return; // We already have match info
+        }
+
+        inCompetition = true;
+        eventName = newEventName;
+        matchType = newMatchType;
+        matchNumber = newMatchNumber;
+    }
+
+    private static LoggingSystem mInstance;
+
+    public static LoggingSystem getInstance() {
         if (mInstance == null) {
-            mInstance = new LoggingSystem();
+            mInstance = new LoggingSystem(false);
         }
-        return mInstance; 
+        return mInstance;
     }
 
-    //  start function that opens file
-    public void register(ILoggable newLoggable, String fileName) {
-        if (log == true) {
-            FileWriter fileWriter = null;
-            try {
-                fileWriter = new FileWriter(mDirectory + "/" + fileName);
-            } catch (Exception e) {
-                System.err.println("Couldn't register new file" + fileName);
-            }
-            ArrayList<String> itemNames = newLoggable.getItemNames();
-            loggableFiles.add(fileWriter);
-            //  Write names to file
-            try {
-                for (int h=0; h < itemNames.size(); h++) {
-                    fileWriter.write(itemNames.get(h));
-                    if (h != itemNames.size() - 1) {
-                        fileWriter.write(",");
-                    }
-                }
-                fileWriter.write("\n");
-                //  Adding Loggable to loggableItems list
-                loggableItems.add(newLoggable);
-            } catch (Exception e) {
-                System.err.println("Couldn't write to file");
-            }
-        }
+    @FunctionalInterface
+    public interface LoggableProcessor {
+        public void getLoggalbe(Supplier<Object> supplier, int subsystem);
     }
 
-    //  Logging Function
-    //  gets called when main begins logging
-    void Log() {
-        if (log == true) {
-        try{
-            for (int i=0; i < loggableItems.size(); i++) {
-               ArrayList<ArrayList<Number>> items = loggableItems.get(i).getItems();
-               //  get object fileWriter from the list 
-               FileWriter fileWriter = loggableFiles.get(i);
-               //  write to files
-               for (int j=0; j < items.size(); j++) {
-                   ArrayList<Number> data = items.get(j);
-                   for (int m=0; m < data.size(); m++){
-                        fileWriter.write(data.get(m).toString());
-                        if (m != data.size()-1){
-                            fileWriter.write(",");
-                        }
-                    }
-                    fileWriter.write("\n");
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Couldn't get object and/or log it");
-        }
-    }
-    }
+    public static Map<Class<?>, LoggableProcessor> LoggalbeHandler = Map.ofEntries(
+            entry(int.class,
+                    (supplier, subsystem) -> {
+                        mElements.get(subsystem).add(() -> {
+                            if (supplier.get() == null) {
+                                return new String();
+                            }
+                            return String.valueOf(supplier.get());
+                        });
+                    }),
+            entry(boolean.class,
+                    (supplier, subsystem) -> {
+                        mElements.get(subsystem).add(() -> {
+                            if (supplier.get() == null) {
+                                return new String();
+                            }
+                            return String.valueOf(supplier.get());
+                        });
+                    }),
+            entry(String.class,
+                    (supplier, subsystem) -> {
+                        mElements.get(subsystem).add(() -> {
+                            if (supplier.get() == null) {
+                                return new String();
+                            }
+                            return (String) supplier.get();
+                        });
+                    }),
+            entry(double.class,
+                    (supplier, subsystem) -> {
+                        mElements.get(subsystem).add(() -> {
+                            if (supplier.get() == null) {
+                                return new String();
+                            }
+                            return String.valueOf(supplier.get());
+                        });
+                    }));
 
-    //  Close Logging System
-    void Close() {
-        if (log = true) {
-            try {
-                //  Get final logs
-                Log();
-                //  Close files 
-                for (int i=0; i< loggableFiles.size(); i++) {
-                    FileWriter fileWriter = loggableFiles.get(i);
-                    fileWriter.close();
-                }
-            } catch (Exception e) {
-                System.err.println("Couldn't close file");
-            }
-        }
-    }
-
-    public void registerLoops(ILooper looper) {
-        looper.register(new Loop() {
-            @Override
-            public void onStart(double timestamp) {
-            }
-            @Override 
-            public void onLoop(double timestamp) {
-                if (log == true) {
-                Log();
-                }
-            }
-            @Override 
-            public void onStop(double timestamp) {
-            }
-        });
-    }
 }

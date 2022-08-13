@@ -1,13 +1,11 @@
 package com.team1678.frc2022.subsystems;
 
-import java.util.ArrayList;
-
 import com.ctre.phoenix.sensors.BasePigeonSimCollection;
 import com.team1678.frc2022.Constants;
 import com.team1678.frc2022.RobotState;
 import com.team1678.frc2022.drivers.Pigeon;
 import com.team1678.frc2022.drivers.SimSwerveModule;
-import com.team1678.frc2022.logger.LogStorage;
+import com.team1678.frc2022.logger.Log;
 import com.team1678.frc2022.logger.LoggingSystem;
 import com.team1678.frc2022.loops.ILooper;
 import com.team1678.frc2022.loops.Loop;
@@ -24,7 +22,6 @@ import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -39,9 +36,6 @@ public class Swerve extends Subsystem {
 
     // limelight instance for raw aiming
     Limelight mLimelight = Limelight.getInstance();
-
-    // logger
-    LogStorage<PeriodicIO> mStorage = null;
 
     // wants vision aim during auto
     public boolean mWantsAutoVisionAim = false;
@@ -106,6 +100,8 @@ public class Swerve extends Subsystem {
             new SimSwerveModule(2, Constants.SwerveConstants.Mod2.SwerveModuleConstants()),
             new SimSwerveModule(3, Constants.SwerveConstants.Mod3.SwerveModuleConstants())
         };
+
+        LoggingSystem.getInstance().registerObject(this.getClass(), this);
     }
 
     @Override
@@ -334,8 +330,6 @@ public class Swerve extends Subsystem {
         mPeriodicIO.snap_target = Math.toDegrees(snapPIDController.getGoal().position);
         mPeriodicIO.vision_align_target_angle = Math.toDegrees(mLimelightVisionAlignGoal);
         mPeriodicIO.swerve_heading = MathUtil.inputModulus(mPigeon.getYaw().getDegrees(), 0, 360);
-
-        SendLog();
     }
 
     public static class PeriodicIO {
@@ -366,61 +360,24 @@ public class Swerve extends Subsystem {
         mSimPigeon.addHeading(chassisRotationSpeed);
     }
 
-    //logger
-    @Override
-    public void registerLogger(LoggingSystem LS) {
-        SetupLog();
-        LS.register(mStorage, "SWERVE_LOGS.csv");
+    @Log
+    private double getOdometryX() {
+        return mPeriodicIO.odometry_pose_x;
+    }
+
+    @Log
+    private double getOdometryY() {
+        return mPeriodicIO.odometry_pose_x;
+    }
+
+    @Log
+    private double getOdometryRot() {
+        return mPeriodicIO.odometry_pose_x;
     }
     
-    public void SetupLog() {
-        mStorage = new LogStorage<PeriodicIO>();
-
-        ArrayList<String> headers = new ArrayList<String>();
-        headers.add("timestamp");
-        headers.add("is_enabled");
-        headers.add("odometry_pose_x");
-        headers.add("odometry_pose_y");
-        headers.add("odometry_pose_rot");
-        headers.add("pigeon_heading");
-        headers.add("robot_pitch");
-        headers.add("robot_roll");
-        headers.add("snap_target");
-        headers.add("vision_align_target_angle");
-        headers.add("swerve_heading");
-        for (SimSwerveModule module : this.mSwerveMods) {
-            headers.add(module.moduleNumber + "_angle");
-            headers.add(module.moduleNumber + "_desired_angle");
-            headers.add(module.moduleNumber + "_velocity");
-            headers.add(module.moduleNumber + "_cancoder");
-        }
-
-        mStorage.setHeaders(headers);
+    @Log
+    private double timestamp() {
+        return Timer.getFPGATimestamp(); 
     }
-
-    public void SendLog() {
-        ArrayList<Number> items = new ArrayList<Number>();
-        items.add(Timer.getFPGATimestamp());
-        items.add(mIsEnabled ? 1.0 : 0.0);
-        items.add(mPeriodicIO.odometry_pose_x);
-        items.add(mPeriodicIO.odometry_pose_y);
-        items.add(mPeriodicIO.odometry_pose_rot);
-        items.add(mPeriodicIO.pigeon_heading);
-        items.add(mPeriodicIO.robot_pitch);
-        items.add(mPeriodicIO.robot_roll);
-        items.add(mPeriodicIO.snap_target);
-        items.add(mPeriodicIO.vision_align_target_angle);
-        items.add(mPeriodicIO.swerve_heading);
-        for (SimSwerveModule module : this.mSwerveMods) {
-            items.add(module.getState().angle.getDegrees());
-            items.add(module.getTargetAngle());
-            items.add(module.getState().speedMetersPerSecond);
-            items.add(MathUtil.inputModulus(module.getCanCoder().getDegrees() - module.angleOffset, 0, 360));
-        }
-
-        // send data to logging storage
-        mStorage.addData(items);
-    }
-
 }
 

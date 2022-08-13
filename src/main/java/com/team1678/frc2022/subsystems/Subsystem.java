@@ -1,6 +1,5 @@
 package com.team1678.frc2022.subsystems;
 
-import com.team1678.frc2022.logger.LoggingSystem;
 import com.team1678.frc2022.loops.ILooper;
 
 /**
@@ -27,8 +26,6 @@ public abstract class Subsystem {
     public void zeroSensors() {}
 
     public void registerEnabledLoops(ILooper enabledLooper) {}
-
-    public void registerLogger(LoggingSystem LS) {}
 
     public abstract boolean checkSystem();
 

@@ -11,7 +11,6 @@ import com.team1678.frc2022.auto.AutoModeSelector;
 import com.team1678.frc2022.auto.modes.AutoModeBase;
 import com.team1678.frc2022.controlboard.ControlBoard;
 import com.team1678.frc2022.controlboard.ControlBoard.SwerveCardinal;
-import com.team1678.frc2022.logger.LoggingSystem;
 import com.team1678.frc2022.loops.CrashTracker;
 import com.team1678.frc2022.loops.Looper;
 import com.team1678.frc2022.shuffleboard.ShuffleBoardInteractions;
@@ -64,9 +63,6 @@ public class Robot extends edu.wpi.first.wpilibj.TimedRobot {
 	// robot state estimator
 	private final RobotStateEstimator mRobotStateEstimator = RobotStateEstimator.getInstance();
 
-	// logging system
-	private LoggingSystem mLogger = LoggingSystem.getInstance();
-
 	// auto instances
 	private AutoModeExecutor mAutoModeExecutor;
 	private AutoModeSelector mAutoModeSelector = new AutoModeSelector();
@@ -93,9 +89,6 @@ public class Robot extends edu.wpi.first.wpilibj.TimedRobot {
 			mSubsystemManager.registerEnabledLoops(mEnabledLooper);
 			mSubsystemManager.registerDisabledLoops(mDisabledLooper);
 			
-			mSubsystemManager.registerLoggingSystems(mLogger);
-            mLogger.registerLoops(mLoggingLooper);
-
 			RobotState.getInstance().reset(Timer.getFPGATimestamp(), new com.team254.lib.geometry.Pose2d());
 			mSwerve.resetOdometry(new Pose2d());
 			mSwerve.resetAnglesToAbsolute();

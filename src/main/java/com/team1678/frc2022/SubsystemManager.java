@@ -19,7 +19,11 @@ public class SubsystemManager implements ILooper {
     private List<Subsystem> mAllSubsystems;
     private List<Loop> mLoops = new ArrayList<>();
 
-    private SubsystemManager() {}
+    private LoggingSystem ls;
+
+    private SubsystemManager() {
+        ls = LoggingSystem.getInstance();
+    }
 
     public static SubsystemManager getInstance() {
         if (mInstance == null) {
@@ -55,6 +59,7 @@ public class SubsystemManager implements ILooper {
         @Override
         public void onStart(double timestamp) {
             mLoops.forEach(l -> l.onStart(timestamp));
+            ls.start();
         }
 
         @Override
@@ -62,11 +67,13 @@ public class SubsystemManager implements ILooper {
             mAllSubsystems.forEach(Subsystem::readPeriodicInputs);
             mLoops.forEach(l -> l.onLoop(timestamp));
             mAllSubsystems.forEach(Subsystem::writePeriodicOutputs);
+            ls.queueLogs();
         }
 
         @Override
         public void onStop(double timestamp) {
             mLoops.forEach(l -> l.onStop(timestamp));
+            ls.end();
         }
     }
 
@@ -90,10 +97,6 @@ public class SubsystemManager implements ILooper {
 
     public void registerDisabledLoops(Looper disabledLooper) {
         disabledLooper.register(new DisabledLoop());
-    }
-
-    public void registerLoggingSystems(LoggingSystem LS) {
-        mAllSubsystems.forEach(s -> s.registerLogger(LS));
     }
 
     @Override

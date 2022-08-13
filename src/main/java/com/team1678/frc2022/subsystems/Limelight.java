@@ -2,8 +2,6 @@ package com.team1678.frc2022.subsystems;
 
 import com.team1678.frc2022.Constants;
 import com.team1678.frc2022.RobotState;
-import com.team1678.frc2022.logger.LogStorage;
-import com.team1678.frc2022.logger.LoggingSystem;
 import com.team1678.frc2022.loops.Loop;
 import com.team1678.frc2022.loops.ILooper;  
 
@@ -29,9 +27,6 @@ public class Limelight extends Subsystem {
 
     private static Limelight mInstance = null;
     
-    // logger
-    LogStorage<PeriodicIO> mStorage = null;
-
     private int mLatencyCounter = 0;
 
     // distance to target
@@ -79,9 +74,6 @@ public class Limelight extends Subsystem {
                     }
                 }
                 
-                // send log data
-                SendLog();
-
                 final double end = Timer.getFPGATimestamp();
                 mPeriodicIO.dt = end - start;
             }
@@ -276,45 +268,4 @@ public class Limelight extends Subsystem {
         return new double[] {mPeriodicIO.xOffset, mPeriodicIO.yOffset};
     }
 
-    // logger
-    
-    @Override
-    public void registerLogger(LoggingSystem LS) {
-        SetupLog();
-        LS.register(mStorage, "LIMELIGHT_LOGS.csv");
-    }
-
-    
-    public void SetupLog() {
-        mStorage = new LogStorage<PeriodicIO>();
-
-        ArrayList<String> headers = new ArrayList<String>();
-        headers.add("timestamp");
-        
-        headers.add("has_comms");
-        headers.add("dt");
-        headers.add("latency");
-        
-        headers.add("xOffset");
-        headers.add("yOffset");
-        headers.add("area");
-        
-        mStorage.setHeaders(headers);
-    }
-
-    public void SendLog() {
-        ArrayList<Number> items = new ArrayList<Number>();
-        items.add(Timer.getFPGATimestamp());
-
-        items.add(mPeriodicIO.has_comms ? 1.0 : 0.0);
-        items.add(mPeriodicIO.dt);
-        items.add(mPeriodicIO.latency);
-
-        items.add(mPeriodicIO.xOffset);
-        items.add(mPeriodicIO.yOffset);
-        items.add(mPeriodicIO.area);
-        
-        // send data to logging storage
-        mStorage.addData(items);
-    }
 }
