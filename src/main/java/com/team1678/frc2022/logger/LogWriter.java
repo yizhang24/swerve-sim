@@ -25,14 +25,9 @@ public class LogWriter extends Thread {
 
         while (true) {
             if (!running && queue.isEmpty()) {
+                close();
                 this.interrupt();
             }
-
-            if (isInterrupted()) {
-                flush();
-                break;
-            }
-            
             log();
         }
     }
@@ -42,6 +37,7 @@ public class LogWriter extends Thread {
     }
 
     public void log() {
+        System.out.println(queue.size());
         if (queue.isEmpty()) {
             return;
         }

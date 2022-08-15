@@ -32,7 +32,7 @@
     }
   },
   "NetworkTables": {
-    "Shuffleboard": {
+    "SmartDashboard": {
       "open": true
     }
   }

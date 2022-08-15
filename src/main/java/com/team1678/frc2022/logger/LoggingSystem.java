@@ -14,7 +14,7 @@ import java.util.NoSuchElementException;
 import java.util.TimeZone;
 import java.util.function.Supplier;
 
-import com.team1678.frc2022.Robot;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import java.lang.Object;
 
@@ -50,10 +50,12 @@ public class LoggingSystem {
         mLogWriter = new LogWriter(mQueue);
         dateFormat.setTimeZone(TimeZone.getTimeZone("PST"));
         isBenchmark = benchmarking;
-        if (isBenchmark || Robot.isSimulation()) {
+        if (isBenchmark) {
             kRootDirectory = "./Output Logs";
         } else {
-            kRootDirectory = "/home/lvuser/logs";
+            // kRootDirectory = "/home/lvuser/logs";
+            kRootDirectory = "./Output Logs";
+
         }
     }
 
@@ -100,7 +102,7 @@ public class LoggingSystem {
 
         String name;
         if (isBenchmark) {
-            name = "ANNOTATION_LOGGER";
+            name = "New";
         } else {
             name = loggedClass.getSimpleName();
         }
@@ -114,7 +116,7 @@ public class LoggingSystem {
 
         String path = kRootDirectory;
 
-        if (!isBenchmark || Robot.isReal()) {
+        if (!isBenchmark) {
             // create logs folder if not present
             File rootDirectory = new File(kRootDirectory);
             if (!rootDirectory.isDirectory()) {
@@ -170,6 +172,7 @@ public class LoggingSystem {
             }
             mQueue.add(new LogEntry(i, temp));
         }
+        SmartDashboard.putNumber("Queue Size", queueSize());
     }
 
     public int queueSize() {
@@ -180,12 +183,12 @@ public class LoggingSystem {
         if (!running) {
             running = true;
             setDirectory();
-            mLogWriter.updateStorage(mStorage);
             System.out.println("Starting Logger");
-            if (mLogWriter.isAlive()) {
-                mLogWriter.interrupt();
+            mQueue.clear();
+            mLogWriter.updateStorage(mStorage);
+            if(!mLogWriter.isAlive()) {
+                mLogWriter.start();
             }
-            mLogWriter.start();
         }
     }
 
@@ -197,7 +200,8 @@ public class LoggingSystem {
         if (running) {
             running = false;
 
-            mLogWriter.end();
+            mLogWriter.flush();
+            mQueue.clear();
 
             if (inCompetition) {
                 try {

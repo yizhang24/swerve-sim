@@ -49,21 +49,21 @@ public class CrashTracker {
 
     private static void logMarker(String mark, Throwable nullableException) {
 
-        try (PrintWriter writer = new PrintWriter(new FileWriter("/Simulation Logs", true))) {
-            writer.print(RUN_INSTANCE_UUID.toString());
-            writer.print(", ");
-            writer.print(mark);
-            writer.print(", ");
-            writer.print(new Date().toString());
+        // try (PrintWriter writer = new PrintWriter(new FileWriter("/Simulation Logs", true))) {
+        //     writer.print(RUN_INSTANCE_UUID.toString());
+        //     writer.print(", ");
+        //     writer.print(mark);
+        //     writer.print(", ");
+        //     writer.print(new Date().toString());
 
-            if (nullableException != null) {
-                writer.print(", ");
-                nullableException.printStackTrace(writer);
-            }
+        //     if (nullableException != null) {
+        //         writer.print(", ");
+        //         nullableException.printStackTrace(writer);
+        //     }
 
-            writer.println();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        //     writer.println();
+        // } catch (IOException e) {
+        //     e.printStackTrace();
+        // }
     }
 }

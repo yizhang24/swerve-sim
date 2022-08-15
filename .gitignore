@@ -163,4 +163,4 @@ bin/
 .idea/compiler.xml
 .idea/gradle.xml
 
-/Simulation Logs
+/Output Logs
