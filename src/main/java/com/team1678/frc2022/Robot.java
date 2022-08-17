@@ -11,6 +11,7 @@ import com.team1678.frc2022.auto.AutoModeSelector;
 import com.team1678.frc2022.auto.modes.AutoModeBase;
 import com.team1678.frc2022.controlboard.ControlBoard;
 import com.team1678.frc2022.controlboard.ControlBoard.SwerveCardinal;
+import com.team1678.frc2022.logger.LoggingSystem;
 import com.team1678.frc2022.loops.CrashTracker;
 import com.team1678.frc2022.loops.Looper;
 import com.team1678.frc2022.shuffleboard.ShuffleBoardInteractions;
@@ -23,8 +24,11 @@ import com.team1678.lib.util.CTREConfigs;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
-
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -244,6 +248,31 @@ public class Robot extends edu.wpi.first.wpilibj.TimedRobot {
 			mLimelight.setLed(Limelight.LedMode.ON);
 			mLimelight.writePeriodicOutputs();
 			mLimelight.outputTelemetry();
+
+			if (DriverStation.isFMSAttached() &&  !LoggingSystem.inCompetition) {
+				NetworkTable nt = NetworkTableInstance.getDefault().getTable("FMSInfo");
+				String eventName = nt.getEntry("EventName").getString("NA");
+				int matchNumber = (int) nt.getEntry("MatchNumber").getDouble(0.0);
+				int matchTypeIndex = (int) nt.getEntry("MatchType").getDouble(0.0);
+				System.out.println(matchTypeIndex);
+				String matchTypeName;
+				switch (matchTypeIndex) {
+					case 1:
+						matchTypeName = "Practice";
+						break;
+					case 2:
+				  		matchTypeName = "Qualification";
+						break;
+					case 3:
+				  		matchTypeName = "Elimination";
+						break;
+				  	default:
+						matchTypeName = "None";
+						break;
+				}
+
+				LoggingSystem.getInstance().updateMatchInfo(eventName, matchTypeName, matchNumber);
+			}
 
 			Optional<AutoModeBase> autoMode = mAutoModeSelector.getAutoMode();
 			if (autoMode.isPresent() && autoMode.get() != mAutoModeExecutor.getAutoMode()) {

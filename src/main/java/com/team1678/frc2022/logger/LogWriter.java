@@ -2,15 +2,16 @@ package com.team1678.frc2022.logger;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.concurrent.ArrayBlockingQueue;
 
 public class LogWriter extends Thread {
     
-    private final ArrayDeque<LogEntry> queue;
+    private final ArrayBlockingQueue<LogEntry> queue;
     private ArrayList<LogStorage> storage;
 
     private boolean running = false;
 
-    public LogWriter(ArrayDeque<LogEntry> queue) {
+    public LogWriter(ArrayBlockingQueue<LogEntry> queue) {
         super("LogWriter");
         this.queue = queue;
     }
@@ -24,10 +25,6 @@ public class LogWriter extends Thread {
         running = true;
 
         while (true) {
-            if (!running && queue.isEmpty()) {
-                close();
-                this.interrupt();
-            }
             log();
         }
     }
@@ -37,16 +34,22 @@ public class LogWriter extends Thread {
     }
 
     public void log() {
-        System.out.println(queue.size());
         if (queue.isEmpty()) {
             return;
         }
         
-        LogEntry entry = queue.pop();
+        LogEntry entry;
+        try {
+            entry = queue.take();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return;
+        }
 
         LogStorage store = storage.get(entry.getTarget());
 
         store.writeData(entry.getValues());
+        flush();
     }
 
     public void flush() {

@@ -7,14 +7,13 @@ import java.lang.reflect.Method;
 import java.sql.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.TimeZone;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.function.Supplier;
 
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import java.lang.Object;
 
@@ -31,7 +30,9 @@ public class LoggingSystem {
     private boolean running = false;
     private static ArrayList<ArrayList<Supplier<String>>> mElements = new ArrayList<ArrayList<Supplier<String>>>();
     private static ArrayList<LogStorage> mStorage = new ArrayList<LogStorage>();
-    private static ArrayDeque<LogEntry> mQueue = new ArrayDeque<LogEntry>(kQueueCapacity);
+
+    private final ArrayBlockingQueue<LogEntry> mQueue = new ArrayBlockingQueue<LogEntry>(kQueueCapacity);
+
     private static File mLogDirectory = null;
 
     private static DateFormat dateFormat = new SimpleDateFormat(
@@ -39,7 +40,7 @@ public class LoggingSystem {
 
 
     private Date startTime;
-    private static boolean inCompetition = false;
+    public static boolean inCompetition = false;
     private static String eventName;
     private static String matchType;
     private static Integer matchNumber;
@@ -170,9 +171,8 @@ public class LoggingSystem {
             for (int j = 0; j < values.size(); j++) {
                 temp[j] = values.get(j).get();
             }
-            mQueue.add(new LogEntry(i, temp));
+            mQueue.offer(new LogEntry(i, temp));
         }
-        SmartDashboard.putNumber("Queue Size", queueSize());
     }
 
     public int queueSize() {
@@ -200,20 +200,26 @@ public class LoggingSystem {
         if (running) {
             running = false;
 
-            mLogWriter.flush();
+            System.out.println("Stopping Logger");
+
+            mLogWriter.close();
             mQueue.clear();
 
             if (inCompetition) {
+                System.out.println("Renaming DIR");
                 try {
-                    String path = kRootDirectory + "/" + eventName + matchType + " Match "
-                            + matchNumber.toString() + "_" + dateFormat.format(startTime);
-                    mLogDirectory.renameTo(new File(path));  
+                    String path = kRootDirectory + "/" + eventName + " " + matchType + " Match "
+                            + matchNumber.toString() + " (" + dateFormat.format(startTime) + ")";
+                    System.out.println("Trying to rename dir to: " + path);
+                    if(mLogDirectory.renameTo(new File(path))){
+                        System.out.println("Renamed Log Directory");
+                    } else {
+                        System.out.println("Renaming Log Directory Failed");
+                    }
                 } catch (NoSuchElementException e) {
                     // No-op
                 }
-
             }
-
         }
     }
 
@@ -231,10 +237,6 @@ public class LoggingSystem {
     }
     
     public void updateMatchInfo(String newEventName, String newMatchType, int newMatchNumber) {
-        if (inCompetition) {
-            return; // We already have match info
-        }
-
         inCompetition = true;
         eventName = newEventName;
         matchType = newMatchType;
