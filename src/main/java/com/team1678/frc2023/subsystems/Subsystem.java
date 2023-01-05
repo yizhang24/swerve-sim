@@ -21,13 +21,13 @@ public abstract class Subsystem {
     // Optional design pattern for caching periodic writes to avoid hammering the HAL/CAN.
     public void writePeriodicOutputs() {}
 
-    public abstract void stop();
+    public void stop() {};
 
     public void zeroSensors() {}
 
     public void registerEnabledLoops(ILooper enabledLooper) {}
 
-    public abstract boolean checkSystem();
+    public boolean checkSystem() { return false; };
 
     public boolean hasEmergency = false;
 }
