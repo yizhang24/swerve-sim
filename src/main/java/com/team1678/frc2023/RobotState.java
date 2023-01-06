@@ -10,6 +10,7 @@ import com.team1678.frc2023.subsystems.Subsystem;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.wpilibj.Timer;
 
 public class RobotState extends Subsystem {
     private static RobotState mInstance;
@@ -21,15 +22,13 @@ public class RobotState extends Subsystem {
         return mInstance;
     }
     
-    private static final double HISTORY_LENGTH_SECONDS = 0.5; // 1.0 / 0.02 = 50 entries at optimal loop times
+    private static final double HISTORY_LENGTH_SECONDS = 1.0; // 1.0 / 0.02 = 50 entries at optimal loop times
 
     private final TreeMap<Double, Pose2d> drivetrainData = new TreeMap<>(); // Pose estimate from odometry
     private final TreeMap<Double, Pose2d> visionData = new TreeMap<>(); // Pose estimate from vision
 
-    private Pose2d firstPose = new Pose2d();
+    private Pose2d lastRecordedPose = new Pose2d();
     private final TreeMap<Double, Pose2d> correctedPoseData = new TreeMap<>(); // Real robot pose
-
-    private boolean hasNewVisionUpdate = false;
 
 
     public void addOdometryObservation(double timestamp, Pose2d field_to_vehicle) {
@@ -38,7 +37,6 @@ public class RobotState extends Subsystem {
 
     public void addVisionObservation(double timestamp, Pose2d field_to_vehicle) {
         visionData.put(timestamp, field_to_vehicle);
-        hasNewVisionUpdate = true;
     }
 
     @Override
@@ -54,7 +52,9 @@ public class RobotState extends Subsystem {
 
                 pruneByTime(timestamp);
 
-                Pose2d pose = firstPose;
+                Pose2d pose = lastRecordedPose;
+
+                double dt = Timer.getFPGATimestamp();
 
                 // Iterate through all drivetrain observations
                 for (Map.Entry<Double, Pose2d> drivetrainEntry : drivetrainData.entrySet()) {
@@ -74,8 +74,9 @@ public class RobotState extends Subsystem {
                     if (nextPose != null) {
                         odometryDelta = nextPose.minus(drivetrainEntry.getValue());  
                     }
+
                     // Some weighting calculation?
-                    visionWeight = 0.04;
+                    visionWeight = 0.1;
             
                     // Create submap of vision entries between now and next drivetrain update
                     SortedMap<Double, Pose2d> intermediateVisionEntries = visionData.subMap(drivetrainEntry.getKey(), nextDrivetrainObservation);
@@ -88,10 +89,10 @@ public class RobotState extends Subsystem {
 
                     pose = pose.plus(odometryDelta);
                 }
-                System.out.println(pose);
-                System.out.println("------------------------------");
+                dt = Timer.getFPGATimestamp() - dt;
                 correctedPoseData.put(timestamp, pose);
             }
+
 
             @Override
             public void onStop(double timestamp) {
@@ -118,7 +119,7 @@ public class RobotState extends Subsystem {
 
         while (correctedPoseData.size() > 0 && correctedPoseData.firstKey() < earliest) {
             correctedPoseData.pollFirstEntry();
-            firstPose = correctedPoseData.firstEntry().getValue(); 
+            lastRecordedPose = correctedPoseData.firstEntry().getValue(); 
         }
     }
 
