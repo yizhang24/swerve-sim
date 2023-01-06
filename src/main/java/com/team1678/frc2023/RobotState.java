@@ -10,7 +10,6 @@ import com.team1678.frc2023.subsystems.Subsystem;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.wpilibj.Timer;
 
 public class RobotState extends Subsystem {
     // Singleton instance

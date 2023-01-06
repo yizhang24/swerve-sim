@@ -132,7 +132,7 @@ public class Swerve extends Subsystem {
         });
     }
 
-    private final double kVisionUpdateFrequency = 0.5;
+    private final double kVisionUpdateFrequency = 0.02;
     private double kLastVisionUpdate = 0.0;
 
     public Pose2d kSimVisionPose = new Pose2d();
@@ -314,14 +314,14 @@ public class Swerve extends Subsystem {
     }
 
     public void updateSwerveOdometry(){
-        mSwerveOdometry.update(mPigeon.getYaw(), getStates());
-
         chassisVelocity = Constants.SwerveConstants.swerveKinematics.toChassisSpeeds(
-                    mInstance.mSwerveMods[0].getSpeed(),
-                    mInstance.mSwerveMods[1].getSpeed(),
-                    mInstance.mSwerveMods[2].getSpeed(),
-                    mInstance.mSwerveMods[3].getSpeed()
-            );
+            mInstance.mSwerveMods[0].getSpeed(),
+            mInstance.mSwerveMods[1].getSpeed(),
+            mInstance.mSwerveMods[2].getSpeed(),
+            mInstance.mSwerveMods[3].getSpeed()
+        );
+        mSimPigeon.addHeading(chassisVelocity.omegaRadiansPerSecond);
+        mSwerveOdometry.update(mPigeon.getYaw(), getStates());
     }
 
     @Override
@@ -370,9 +370,9 @@ public class Swerve extends Subsystem {
     }
 
     public void updateSim() {
-        double chassisRotationSpeed = chassisVelocity.omegaRadiansPerSecond;
+        // double chassisRotationSpeed = chassisVelocity.omegaRadiansPerSecond;
 
-        mSimPigeon.addHeading(chassisRotationSpeed);
+        // mSimPigeon.addHeading(chassisRotationSpeed);
     }
 
     @Log

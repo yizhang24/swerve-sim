@@ -305,7 +305,7 @@ public class Constants {
     private static Random noiseGeneration = new Random();
 
     // Max drift every second
-    public static final double kDriftMagnitude = 0.05;
+    public static final double kDriftMagnitude = 0.2;
 
     // When to randomize drift
     public static final double kDriftFrequency = 1.0;
