@@ -21,10 +21,13 @@ import com.team1678.frc2023.subsystems.Swerve;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -59,6 +62,8 @@ public class Robot extends edu.wpi.first.wpilibj.TimedRobot {
 	private final Swerve mSwerve = Swerve.getInstance();
 	private final Limelight mLimelight = Limelight.getInstance();
 
+	private final RobotState mRobotState = RobotState.getInstance();
+
 	// auto instances
 	private AutoModeExecutor mAutoModeExecutor;
 	private AutoModeSelector mAutoModeSelector = new AutoModeSelector();
@@ -77,7 +82,8 @@ public class Robot extends edu.wpi.first.wpilibj.TimedRobot {
 
 			mSubsystemManager.setSubsystems(			
 					mSwerve,
-					mLimelight
+					mLimelight,
+					mRobotState
 			);
 
 			mSubsystemManager.registerEnabledLoops(mEnabledLooper);
@@ -136,7 +142,7 @@ public class Robot extends edu.wpi.first.wpilibj.TimedRobot {
                 mAutoModeExecutor.stop();
             }
 
-			mSwerve.resetOdometry(new Pose2d(3, 3, new Rotation2d()));
+			// mSwerve.resetOdometry(new Pose2d(3, 3, new Rotation2d()));
 
 			mDisabledLooper.stop();
 			mEnabledLooper.start();

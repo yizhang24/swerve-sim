@@ -11,6 +11,8 @@ import com.team1678.frc2023.subsystems.Limelight.LimelightConstants;
 import com.team1678.frc2023.subsystems.Swerve.SwerveModuleConstants;
 import com.team254.lib.geometry.Rotation2d;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
@@ -295,4 +297,11 @@ public class Constants {
     // Timeout constants
     public static final int kLongCANTimeoutMs = 100;
     public static final int kCANTimeoutMs = 10;
+    
+    public static Translation2d testOffset = new Translation2d(0.5, 0.0);
+
+    public static Pose2d addNoise(Pose2d original) {
+        return new Pose2d(original.getTranslation().plus(testOffset), original.getRotation());
+    }
+
 }

@@ -2,6 +2,7 @@ package com.team1678.frc2023.subsystems;
 
 import com.ctre.phoenix.sensors.BasePigeonSimCollection;
 import com.team1678.frc2023.Constants;
+import com.team1678.frc2023.Robot;
 import com.team1678.frc2023.RobotState;
 import com.team1678.frc2023.drivers.Pigeon;
 import com.team1678.frc2023.drivers.SimSwerveModule;
@@ -17,6 +18,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
@@ -55,6 +57,8 @@ public class Swerve extends Subsystem {
     private double mLimelightVisionAlignGoal;
     private double mGoalTrackVisionAlignGoal;
     private double mVisionAlignAdjustment;
+
+    private RobotState mRobotState = RobotState.getInstance();
 
     public ProfiledPIDController snapPIDController;
     public PIDController visionPIDController;
@@ -118,6 +122,10 @@ public class Swerve extends Subsystem {
                 mIsEnabled = false;
                 chooseVisionAlignGoal();
                 updateSwerveOdometry();
+                
+
+                mRobotState.addOdometryObservation(Timer.getFPGATimestamp(), getPose());
+                mRobotState.addVisionObservation(Timer.getFPGATimestamp(), Constants.addNoise(getPose()));
             }
 
             @Override
