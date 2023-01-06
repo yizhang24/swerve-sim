@@ -1,5 +1,7 @@
 package com.team1678.frc2023;
 
+import java.util.Random;
+
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.SupplyCurrentLimitConfiguration;
 import com.ctre.phoenix.motorcontrol.can.TalonFXConfiguration;
@@ -11,11 +13,14 @@ import com.team1678.frc2023.subsystems.Limelight.LimelightConstants;
 import com.team1678.frc2023.subsystems.Swerve.SwerveModuleConstants;
 import com.team254.lib.geometry.Rotation2d;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.constraint.CentripetalAccelerationConstraint;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.Timer;
 
 public class Constants {
 
@@ -295,4 +300,32 @@ public class Constants {
     // Timeout constants
     public static final int kLongCANTimeoutMs = 100;
     public static final int kCANTimeoutMs = 10;
+    
+    public static Translation2d testOffset = new Translation2d(0.0, 0.0);
+    private static Random noiseGeneration = new Random();
+
+    // Max drift every second
+    public static final double kDriftMagnitude = 0.2;
+
+    // When to randomize drift
+    public static final double kDriftFrequency = 1.0;
+
+    private static double lastDriftAdjustment = 0.0;
+
+    private static double randXadj;
+    private static double randYadj;
+
+    public static Pose2d addNoise(Pose2d original) {
+        if (lastDriftAdjustment + kDriftFrequency < Timer.getFPGATimestamp()) {
+                double drift = kDriftMagnitude / (1 / Constants.kLooperDt);
+                randXadj = noiseGeneration.nextDouble(-drift, drift);
+                randYadj = noiseGeneration.nextDouble(-drift, drift);
+                lastDriftAdjustment = Timer.getFPGATimestamp();
+        }
+
+        testOffset = testOffset.plus(new Translation2d(randXadj, randYadj));
+
+        return new Pose2d(original.getTranslation().plus(testOffset), original.getRotation());
+    }
+
 }

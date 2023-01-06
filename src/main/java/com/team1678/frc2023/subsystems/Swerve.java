@@ -2,6 +2,7 @@ package com.team1678.frc2023.subsystems;
 
 import com.ctre.phoenix.sensors.BasePigeonSimCollection;
 import com.team1678.frc2023.Constants;
+import com.team1678.frc2023.Robot;
 import com.team1678.frc2023.RobotState;
 import com.team1678.frc2023.drivers.Pigeon;
 import com.team1678.frc2023.drivers.SimSwerveModule;
@@ -17,6 +18,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
@@ -55,6 +57,8 @@ public class Swerve extends Subsystem {
     private double mLimelightVisionAlignGoal;
     private double mGoalTrackVisionAlignGoal;
     private double mVisionAlignAdjustment;
+
+    private RobotState mRobotState = RobotState.getInstance();
 
     public ProfiledPIDController snapPIDController;
     public PIDController visionPIDController;
@@ -118,6 +122,7 @@ public class Swerve extends Subsystem {
                 mIsEnabled = false;
                 chooseVisionAlignGoal();
                 updateSwerveOdometry();
+                addSimPoseObservations();
             }
 
             @Override
@@ -125,6 +130,20 @@ public class Swerve extends Subsystem {
                 stop();
             }
         });
+    }
+
+    private final double kVisionUpdateFrequency = 0.02;
+    private double kLastVisionUpdate = 0.0;
+
+    public Pose2d kSimVisionPose = new Pose2d();
+
+    private void addSimPoseObservations() {
+        if (kVisionUpdateFrequency + kLastVisionUpdate < Timer.getFPGATimestamp()) {
+            kSimVisionPose = getPose();
+            mRobotState.addVisionObservation(Timer.getFPGATimestamp(), kSimVisionPose);
+            kLastVisionUpdate = Timer.getFPGATimestamp();
+        }
+        mRobotState.addOdometryObservation(Timer.getFPGATimestamp(), Constants.addNoise(getPose()));
     }
     
     public void setWantAutoVisionAim(boolean aim) {
@@ -295,14 +314,14 @@ public class Swerve extends Subsystem {
     }
 
     public void updateSwerveOdometry(){
-        mSwerveOdometry.update(mPigeon.getYaw(), getStates());
-
         chassisVelocity = Constants.SwerveConstants.swerveKinematics.toChassisSpeeds(
-                    mInstance.mSwerveMods[0].getSpeed(),
-                    mInstance.mSwerveMods[1].getSpeed(),
-                    mInstance.mSwerveMods[2].getSpeed(),
-                    mInstance.mSwerveMods[3].getSpeed()
-            );
+            mInstance.mSwerveMods[0].getSpeed(),
+            mInstance.mSwerveMods[1].getSpeed(),
+            mInstance.mSwerveMods[2].getSpeed(),
+            mInstance.mSwerveMods[3].getSpeed()
+        );
+        mSimPigeon.addHeading(chassisVelocity.omegaRadiansPerSecond);
+        mSwerveOdometry.update(mPigeon.getYaw(), getStates());
     }
 
     @Override
@@ -351,9 +370,9 @@ public class Swerve extends Subsystem {
     }
 
     public void updateSim() {
-        double chassisRotationSpeed = chassisVelocity.omegaRadiansPerSecond;
+        // double chassisRotationSpeed = chassisVelocity.omegaRadiansPerSecond;
 
-        mSimPigeon.addHeading(chassisRotationSpeed);
+        // mSimPigeon.addHeading(chassisRotationSpeed);
     }
 
     @Log

@@ -136,7 +136,7 @@ public class SimSwerveModule {
     }
 
     public Rotation2d getCanCoder() {
-        return Rotation2d.fromDegrees(angleEncoder.getAbsolutePosition());
+        return new Rotation2d(); //Rotation2d.fromDegrees(angleEncoder.getAbsolutePosition());
     }
 
     public double getTargetAngle() {

@@ -1,12 +1,84 @@
 {
+  "HALProvider": {
+    "Other Devices": {
+      "Talon FX[1]/Fwd Limit": {
+        "header": {
+          "open": true
+        }
+      },
+      "window": {
+        "visible": false
+      }
+    }
+  },
   "NTProvider": {
     "types": {
       "/FMSInfo": "FMSInfo",
+      "/LiveWindow/Ungrouped/PIDController[1]": "PIDController",
+      "/LiveWindow/Ungrouped/PIDController[2]": "PIDController",
+      "/LiveWindow/Ungrouped/Talon FX [0]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon FX [1]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon FX [2]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon FX [3]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon FX [4]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon FX [5]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon FX [6]": "Motor Controller",
+      "/LiveWindow/Ungrouped/Talon FX [7]": "Motor Controller",
       "/SmartDashboard/Auto Mode": "String Chooser",
       "/SmartDashboard/Field": "Field2d"
     },
     "windows": {
       "/SmartDashboard/Field": {
+        "Offset Pose": {
+          "arrowWeight": 1.0,
+          "color": [
+            6.45570182800293,
+            255.0,
+            0.0,
+            255.0
+          ],
+          "length": 0.5270500183105469,
+          "weight": 1.5,
+          "width": 0.5270500183105469
+        },
+        "Robot": {
+          "arrowWeight": 1.0,
+          "color": [
+            0.16184388101100922,
+            0.6127451062202454,
+            0.08410226553678513,
+            255.0
+          ],
+          "length": 0.5270500183105469,
+          "weight": 3.0,
+          "width": 0.5270500183105469
+        },
+        "Vision Pose": {
+          "arrowWeight": 1.0,
+          "color": [
+            1.0,
+            0.0,
+            0.970588207244873,
+            255.0
+          ],
+          "length": 0.5270500183105469,
+          "weight": 1.5,
+          "width": 0.5270500183105469
+        },
+        "estimated pose": {
+          "arrowWeight": 1.0,
+          "color": [
+            0.0,
+            135.0,
+            255.0,
+            255.0
+          ],
+          "length": 0.5270500183105469,
+          "weight": 1.5,
+          "width": 0.5270500183105469
+        },
+        "image": "C:\\Users\\yizhang\\Downloads\\chart-background.png",
+        "width": 16.459999084472656,
         "window": {
           "visible": true
         }
