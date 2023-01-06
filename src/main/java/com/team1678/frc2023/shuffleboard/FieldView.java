@@ -54,6 +54,7 @@ public class FieldView {
 
         mField2d.setRobotPose(robotPose);
         // mField2d.getObjecZt("Swerve Modules").setPoses(modulePoses);
+        mField2d.getObject("Vision Pose").setPoses(Swerve.getInstance().kSimVisionPose);
         mField2d.getObject("Offset Pose").setPoses(Constants.addNoise(robotPose));
     }
 }

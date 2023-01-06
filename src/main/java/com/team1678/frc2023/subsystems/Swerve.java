@@ -122,10 +122,7 @@ public class Swerve extends Subsystem {
                 mIsEnabled = false;
                 chooseVisionAlignGoal();
                 updateSwerveOdometry();
-                
-
-                mRobotState.addOdometryObservation(Timer.getFPGATimestamp(), getPose());
-                mRobotState.addVisionObservation(Timer.getFPGATimestamp(), Constants.addNoise(getPose()));
+                addSimPoseObservations();
             }
 
             @Override
@@ -133,6 +130,20 @@ public class Swerve extends Subsystem {
                 stop();
             }
         });
+    }
+
+    private final double kVisionUpdateFrequency = 0.5;
+    private double kLastVisionUpdate = 0.0;
+
+    public Pose2d kSimVisionPose = new Pose2d();
+
+    private void addSimPoseObservations() {
+        if (kVisionUpdateFrequency + kLastVisionUpdate < Timer.getFPGATimestamp()) {
+            kSimVisionPose = getPose();
+            mRobotState.addVisionObservation(Timer.getFPGATimestamp(), kSimVisionPose);
+            kLastVisionUpdate = Timer.getFPGATimestamp();
+        }
+        mRobotState.addOdometryObservation(Timer.getFPGATimestamp(), Constants.addNoise(getPose()));
     }
     
     public void setWantAutoVisionAim(boolean aim) {
